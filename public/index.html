@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>steele. Product Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f3f0; --card: white; --border: #e0dbd5; --text: #222; --muted: #888;
+  --green: #2a7a3a; --red: #b44; --orange: #c60; --accent: #1a1a2e;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+
+/* HEADER */
+.header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.header .brand { font-size: 20px; font-weight: 300; letter-spacing: 3px; }
+.header .subtitle { font-size: 9px; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); margin-left: 12px; }
+.header .badge { font-size: 8px; padding: 3px 8px; background: #d4edda; color: #155724; letter-spacing: 1px; margin-left: 10px; border-radius: 2px; }
+.header .badge.off { background: #f8d7da; color: #721c24; }
+.nav-btns { display: flex; gap: 4px; }
+.nav-btns button { padding: 6px 14px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; border: 1px solid var(--border); cursor: pointer; font-family: inherit; background: var(--card); color: #666; transition: all .2s; }
+.nav-btns button.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+/* TABS */
+.tabs { background: var(--card); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; overflow-x: auto; }
+.tabs button { padding: 11px 14px; background: none; border: none; border-bottom: 2px solid transparent; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #aaa; cursor: pointer; white-space: nowrap; font-family: inherit; transition: all .2s; }
+.tabs button:hover { color: #666; }
+.tabs button.active { border-bottom-color: var(--accent); color: var(--accent); font-weight: 500; }
+
+/* STATS BAR */
+.stats-bar { padding: 10px 24px; background: #eae6e0; display: flex; gap: 20px; font-size: 11px; color: #666; flex-wrap: wrap; align-items: center; }
+.stats-bar b { color: var(--text); }
+.stats-bar .green { color: var(--green); }
+.stats-bar .red { color: var(--red); }
+.stats-bar .orange { color: var(--orange); }
+
+/* PRODUCT GRID */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1px; padding: 1px; background: var(--border); }
+.card { background: var(--card); cursor: pointer; position: relative; transition: transform .15s; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.08); z-index: 2; }
+.card img { width: 100%; aspect-ratio: 3/4; object-fit: cover; display: block; }
+.card .no-img { width: 100%; aspect-ratio: 3/4; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #aaa; }
+.card .info { padding: 10px 12px 14px; }
+.card .title { font-size: 11px; font-weight: 500; line-height: 1.4; margin-bottom: 4px; }
+.card .price { font-size: 13px; font-weight: 500; }
+.card .price.sale { color: var(--red); }
+.card .was { text-decoration: line-through; color: #aaa; font-size: 10px; margin-left: 5px; }
+.card .type { font-size: 9px; color: var(--muted); margin-top: 3px; letter-spacing: 1px; text-transform: uppercase; display: flex; justify-content: space-between; }
+.badge-oos { position: absolute; top: 8px; left: 8px; background: var(--red); color: white; font-size: 8px; padding: 3px 8px; letter-spacing: 1px; text-transform: uppercase; }
+.badge-sale { position: absolute; top: 8px; right: 8px; background: var(--orange); color: white; font-size: 8px; padding: 3px 8px; letter-spacing: 1px; text-transform: uppercase; }
+
+/* DETAIL VIEW */
+.detail { padding: 24px; max-width: 1000px; }
+.detail .back-btn { background: none; border: 1px solid var(--border); padding: 8px 20px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; margin-bottom: 20px; font-family: inherit; }
+.detail .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+.detail .main-img { width: 100%; border-radius: 2px; margin-bottom: 10px; }
+.detail .thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
+.detail .thumbs img { width: 56px; height: 70px; object-fit: cover; cursor: pointer; border: 2px solid #eee; opacity: .5; transition: all .2s; }
+.detail .thumbs img.active { border-color: var(--accent); opacity: 1; }
+.detail .prod-type { font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.detail .prod-title { font-size: 26px; font-weight: 300; margin-bottom: 10px; line-height: 1.2; }
+.detail .prod-price { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+.detail .prod-stock { font-size: 12px; margin-bottom: 20px; }
+.detail .prod-stock.in { color: var(--green); }
+.detail .prod-stock.out { color: var(--red); }
+.section-label { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; }
+.tags span { padding: 3px 8px; background: #f0ebe5; font-size: 10px; color: #666; border-radius: 2px; }
+.variant-row { display: flex; justify-content: space-between; padding: 7px 10px; margin-bottom: 1px; font-size: 12px; border-radius: 2px; }
+.variant-row.in { background: #faf9f7; }
+.variant-row.out { background: #fdf2f2; }
+.variant-badge { font-size: 8px; padding: 2px 6px; letter-spacing: 1px; text-transform: uppercase; border-radius: 2px; }
+.variant-badge.in { background: #d4edda; color: #155724; }
+.variant-badge.out { background: #f8d7da; color: #721c24; }
+
+/* ANALYSIS */
+.analysis { padding: 24px; max-width: 1000px; }
+.analysis h2 { font-weight: 300; font-size: 24px; margin-bottom: 20px; }
+.analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.panel { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 2px; }
+.panel-title { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.bar-label { width: 120px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-track { flex: 1; background: #f0ebe5; height: 18px; border-radius: 2px; overflow: hidden; }
+.bar-fill { height: 100%; min-width: 2px; border-radius: 2px; transition: width .5s; }
+.bar-fill.dark { background: var(--accent); }
+.bar-fill.green { background: #4a7c59; }
+.bar-fill.blue { background: #3a6b9f; }
+.bar-val { width: 70px; font-size: 11px; text-align: right; color: #666; }
+.size-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+.size-box { padding: 8px 14px; border: 1px solid var(--border); text-align: center; min-width: 52px; border-radius: 2px; }
+.size-box.ok { background: #f0f7f0; }
+.size-box.warn { background: #fef9e7; }
+.size-box.bad { background: #fdf2f2; }
+.size-box .sz { font-size: 14px; font-weight: 500; }
+.size-box .oos-label { font-size: 9px; margin-top: 3px; }
+.size-box.bad .oos-label { color: var(--red); }
+
+/* SILHOUETTE & PRINT ANALYSIS */
+.insight-card { background: var(--card); border: 1px solid var(--border); padding: 16px; border-radius: 2px; margin-bottom: 12px; }
+.insight-card h3 { font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+.insight-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f0ebe5; font-size: 12px; }
+.insight-row:last-child { border-bottom: none; }
+
+/* LOADING & ERROR */
+.loading { text-align: center; padding: 100px; font-size: 12px; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; }
+.error { text-align: center; padding: 60px; color: var(--red); font-size: 14px; }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .detail .layout { grid-template-columns: 1fr; }
+  .analysis-grid { grid-template-columns: 1fr; }
+  .header { padding: 10px 16px; }
+  .tabs { padding: 0 16px; }
+}
+</style>
+</head>
+<body>
+<div id="app"><div class="loading">INITIALIZING STEELE PRODUCT INTELLIGENCE...</div></div>
+<script>
+// =====================================================
+// STEELE PRODUCT INTELLIGENCE PLATFORM
+// =====================================================
+
+const COLLECTIONS = [
+  { label: 'All Products', handle: 'shop-all' },
+  { label: 'Dresses', handle: 'dresses' },
+  { label: 'Mini Dresses', handle: 'mini-dresses' },
+  { label: 'Midi Dresses', handle: 'midi-dresses' },
+  { label: 'Tops & Shirts', handle: 'tops' },
+  { label: 'Skirts', handle: 'skirts-1' },
+  { label: 'Pants & Shorts', handle: 'pants-shorts' },
+  { label: 'Outerwear', handle: 'jackets-coats' },
+  { label: 'Knitwear', handle: 'knit-shop' },
+  { label: 'Sets', handle: 'sets' },
+  { label: 'Best Sellers', handle: 'best-sellers-1' },
+  { label: 'New In', handle: 'new-arrivals' },
+  { label: 'Sale', handle: 'mid-season-sale' },
+];
+
+let state = {
+  products: [], activeCat: 0, selected: null, imgIdx: 0,
+  stats: null, colTitle: '', view: 'grid', loading: true, error: null,
+};
+
+const fmt = (a) => 'A$' + Math.round(parseFloat(a));
+
+// =====================================================
+// DATA FETCHING
+// =====================================================
+async function loadCollection(idx) {
+  state.loading = true; state.error = null; state.selected = null; state.activeCat = idx;
+  render();
+  try {
+    const handle = COLLECTIONS[idx].handle;
+    const res = await fetch(`/api/collection/${handle}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.errors) throw new Error(data.errors[0].message);
+    const col = data.data?.collection;
+    if (!col) throw new Error('Collection "' + handle + '" not found');
+    state.colTitle = col.title;
+    state.products = (col.products?.edges || []).map(e => e.node);
+    computeStats();
+  } catch (e) {
+    state.error = e.message;
+  }
+  state.loading = false;
+  render();
+}
+
+// =====================================================
+// ANALYTICS ENGINE
+// =====================================================
+function computeStats() {
+  const ps = state.products;
+  const prices = ps.map(p => parseFloat(p.priceRange.minVariantPrice.amount)).filter(v => v > 0);
+  const avg = prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
+
+  // Category breakdown
+  const categories = {};
+  ps.forEach(p => {
+    const t = p.productType || 'Other';
+    categories[t] = (categories[t] || 0) + 1;
+  });
+
+  // Dress sub-types (silhouette analysis)
+  const silhouettes = { 'Mini Dress': 0, 'Midi Dress': 0, 'Maxi Dress': 0 };
+  const silhouetteProducts = { 'Mini Dress': [], 'Midi Dress': [], 'Maxi Dress': [] };
+  ps.forEach(p => {
+    const tl = p.title.toLowerCase();
+    if (tl.includes('mini') && (tl.includes('dress') || p.productType === 'Dresses')) {
+      silhouettes['Mini Dress']++;
+      silhouetteProducts['Mini Dress'].push(p);
+    } else if (tl.includes('maxi')) {
+      silhouettes['Maxi Dress']++;
+      silhouetteProducts['Maxi Dress'].push(p);
+    } else if (tl.includes('dress') || p.productType === 'Dresses' || p.productType === 'Dress') {
+      silhouettes['Midi Dress']++;
+      silhouetteProducts['Midi Dress'].push(p);
+    }
+  });
+
+  // Print/Pattern analysis (from product titles)
+  const prints = {};
+  const printKeywords = ['stripe', 'check', 'gingham', 'polka', 'floral', 'print', 'chambray', 'solid', 'patchwork', 'animal'];
+  ps.forEach(p => {
+    const tl = p.title.toLowerCase();
+    let matched = false;
+    printKeywords.forEach(kw => {
+      if (tl.includes(kw)) {
+        const label = kw.charAt(0).toUpperCase() + kw.slice(1);
+        prints[label] = (prints[label] || { count: 0, products: [], avgPrice: 0, totalPrice: 0 });
+        prints[label].count++;
+        prints[label].products.push(p);
+        prints[label].totalPrice += parseFloat(p.priceRange.minVariantPrice.amount);
+        matched = true;
+      }
+    });
+    if (!matched) {
+      prints['Other'] = (prints['Other'] || { count: 0, products: [], avgPrice: 0, totalPrice: 0 });
+      prints['Other'].count++;
+      prints['Other'].products.push(p);
+      prints['Other'].totalPrice += parseFloat(p.priceRange.minVariantPrice.amount);
+    }
+  });
+  Object.values(prints).forEach(p => { p.avgPrice = p.count > 0 ? p.totalPrice / p.count : 0; });
+
+  // Stock analysis
+  let inStock = 0, oos = 0, onSale = 0;
+  ps.forEach(p => {
+    if (p.availableForSale) inStock++; else oos++;
+    const cmp = parseFloat(p.compareAtPriceRange?.maxVariantPrice?.amount || 0);
+    if (cmp > parseFloat(p.priceRange.maxVariantPrice.amount) && cmp > 0) onSale++;
+  });
+
+  // Size availability
+  const sizes = {};
+  ps.forEach(p => p.variants.edges.forEach(v => {
+    const s = v.node.selectedOptions?.find(o => o.name === 'Size');
+    if (s) {
+      if (!sizes[s.value]) sizes[s.value] = { total: 0, oos: 0 };
+      sizes[s.value].total++;
+      if (!v.node.availableForSale) sizes[s.value].oos++;
+    }
+  }));
+
+  // Price buckets
+  const priceBuckets = { 'Under A$100': 0, 'A$100-149': 0, 'A$150-199': 0, 'A$200-249': 0, 'A$250+': 0 };
+  prices.forEach(p => {
+    if (p < 100) priceBuckets['Under A$100']++;
+    else if (p < 150) priceBuckets['A$100-149']++;
+    else if (p < 200) priceBuckets['A$150-199']++;
+    else if (p < 250) priceBuckets['A$200-249']++;
+    else priceBuckets['A$250+']++;
+  });
+
+  // Price by category
+  const categoryPrices = {};
+  ps.forEach(p => {
+    const t = p.productType || 'Other';
+    if (!categoryPrices[t]) categoryPrices[t] = { total: 0, count: 0, min: Infinity, max: 0 };
+    const pr = parseFloat(p.priceRange.minVariantPrice.amount);
+    categoryPrices[t].total += pr;
+    categoryPrices[t].count++;
+    categoryPrices[t].min = Math.min(categoryPrices[t].min, pr);
+    categoryPrices[t].max = Math.max(categoryPrices[t].max, pr);
+  });
+  Object.values(categoryPrices).forEach(c => { c.avg = c.count > 0 ? c.total / c.count : 0; });
+
+  // Tags analysis (season/collection detection)
+  const tagCounts = {};
+  ps.forEach(p => (p.tags || []).forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
+
+  state.stats = {
+    count: ps.length, avgPrice: avg,
+    minPrice: prices.length ? Math.min(...prices) : 0,
+    maxPrice: prices.length ? Math.max(...prices) : 0,
+    categories, silhouettes, silhouetteProducts, prints,
+    inStock, oos, onSale, sizes, priceBuckets, categoryPrices, tagCounts,
+  };
+}
+
+// =====================================================
+// RENDER ENGINE
+// =====================================================
+function render() {
+  const s = state;
+  let h = '';
+
+  // Header
+  h += '<div class="header"><div style="display:flex;align-items:baseline">';
+  h += '<span class="brand">steele.</span>';
+  h += '<span class="subtitle">Product Intelligence</span>';
+  if (!s.loading && !s.error) h += '<span class="badge">LIVE</span>';
+  else if (s.error) h += '<span class="badge off">OFFLINE</span>';
+  h += '</div><div class="nav-btns">';
+  ['grid', 'analysis', 'prints', 'silhouettes'].forEach(v => {
+    h += '<button class="' + (s.view === v ? 'active' : '') + '" onclick="state.view=\'' + v + '\';state.selected=null;render()">' + v + '</button>';
+  });
+  h += '</div></div>';
+
+  // Tabs
+  h += '<div class="tabs">';
+  COLLECTIONS.forEach((c, i) => {
+    h += '<button class="' + (s.activeCat === i ? 'active' : '') + '" onclick="loadCollection(' + i + ')">' + c.label + '</button>';
+  });
+  h += '</div>';
+
+  // Stats bar
+  if (s.stats && !s.selected) {
+    h += '<div class="stats-bar">';
+    h += '<span><b>' + s.stats.count + '</b> products</span>';
+    h += '<span>Avg <b>' + fmt(s.stats.avgPrice) + '</b></span>';
+    h += '<span>Range <b>' + fmt(s.stats.minPrice) + '</b> - <b>' + fmt(s.stats.maxPrice) + '</b></span>';
+    h += '<span class="green"><b>' + s.stats.inStock + '</b> in stock</span>';
+    h += '<span class="red"><b>' + s.stats.oos + '</b> OOS</span>';
+    if (s.stats.onSale > 0) h += '<span class="orange"><b>' + s.stats.onSale + '</b> on sale</span>';
+    h += '</div>';
+  }
+
+  // Content
+  if (s.loading) {
+    h += '<div class="loading">Loading from Shopify...</div>';
+  } else if (s.error) {
+    h += '<div class="error">' + s.error + '</div>';
+  } else if (s.selected) {
+    h += renderDetail();
+  } else if (s.view === 'analysis') {
+    h += renderAnalysis();
+  } else if (s.view === 'prints') {
+    h += renderPrintAnalysis();
+  } else if (s.view === 'silhouettes') {
+    h += renderSilhouetteAnalysis();
+  } else {
+    h += renderGrid();
+  }
+
+  document.getElementById('app').innerHTML = h;
+}
+
+// =====================================================
+// GRID VIEW
+// =====================================================
+function renderGrid() {
+  let h = '<div class="grid">';
+  state.products.forEach((p, i) => {
+    const img = p.images.edges[0]?.node;
+    const pr = p.priceRange.minVariantPrice;
+    const cmp = p.compareAtPriceRange?.maxVariantPrice;
+    const sale = cmp && parseFloat(cmp.amount) > parseFloat(pr.amount) && parseFloat(cmp.amount) > 0;
+    const stockCount = p.variants.edges.filter(v => v.node.availableForSale).length;
+
+    h += '<div class="card" onclick="state.selected=state.products[' + i + '];state.imgIdx=0;render()">';
+    if (!p.availableForSale) h += '<div class="badge-oos">Sold Out</div>';
+    if (sale) h += '<div class="badge-sale">Sale</div>';
+    if (img) h += '<img src="' + img.url + '" alt="' + p.title + '" loading="lazy">';
+    else h += '<div class="no-img">No image</div>';
+    h += '<div class="info">';
+    h += '<div class="title">' + p.title + '</div>';
+    h += '<div><span class="price' + (sale ? ' sale' : '') + '">' + fmt(pr.amount) + '</span>';
+    if (sale) h += '<span class="was">' + fmt(cmp.amount) + '</span>';
+    h += '</div>';
+    if (p.productType) {
+      h += '<div class="type"><span>' + p.productType + '</span>';
+      h += '<span style="color:' + (p.availableForSale ? 'var(--green)' : 'var(--red)') + '">' + stockCount + '/' + p.variants.edges.length + '</span></div>';
+    }
+    h += '</div></div>';
+  });
+  return h + '</div>';
+}
+
+// =====================================================
+// DETAIL VIEW
+// =====================================================
+function renderDetail() {
+  const p = state.selected, idx = state.imgIdx;
+  let h = '<div class="detail">';
+  h += '<button class="back-btn" onclick="state.selected=null;render()">Back to Collection</button>';
+  h += '<div class="layout"><div>';
+
+  if (p.images.edges[idx]) h += '<img class="main-img" src="' + p.images.edges[idx].node.url + '">';
+  h += '<div class="thumbs">';
+  p.images.edges.forEach((im, i) => {
+    h += '<img src="' + im.node.url + '" class="' + (idx === i ? 'active' : '') + '" onclick="state.imgIdx=' + i + ';render()">';
+  });
+  h += '</div></div><div>';
+
+  h += '<div class="prod-type">' + (p.productType || 'Product') + '</div>';
+  h += '<div class="prod-title">' + p.title + '</div>';
+  h += '<div class="prod-price">' + fmt(p.priceRange.minVariantPrice.amount) + '</div>';
+  h += '<div class="prod-stock ' + (p.availableForSale ? 'in' : 'out') + '">';
+  h += (p.availableForSale ? 'In Stock' : 'Sold Out');
+  if (p.totalInventory != null) h += ' | ' + p.totalInventory + ' units';
+  h += '</div>';
+
+  if (p.tags && p.tags.length) {
+    h += '<div class="section-label">Tags</div><div class="tags">';
+    p.tags.slice(0, 20).forEach(t => { h += '<span>' + t + '</span>'; });
+    h += '</div>';
+  }
+
+  h += '<div class="section-label">Variants (' + p.variants.edges.length + ')</div>';
+  p.variants.edges.forEach(v => {
+    const n = v.node;
+    h += '<div class="variant-row ' + (n.availableForSale ? 'in' : 'out') + '">';
+    h += '<span>' + n.title + '</span>';
+    h += '<span style="display:flex;gap:10px;align-items:center">' + fmt(n.price.amount);
+    if (n.quantityAvailable != null) h += '<span style="font-size:10px;color:#888">qty: ' + n.quantityAvailable + '</span>';
+    h += '<span class="variant-badge ' + (n.availableForSale ? 'in' : 'out') + '">' + (n.availableForSale ? 'In Stock' : 'OOS') + '</span>';
+    h += '</span></div>';
+  });
+
+  h += '</div></div></div>';
+  return h;
+}
+
+// =====================================================
+// CATEGORY & PRICE ANALYSIS
+// =====================================================
+function renderAnalysis() {
+  const s = state.stats;
+  let h = '<div class="analysis">';
+  h += '<h2>' + state.colTitle + ' - Collection Analysis</h2>';
+
+  h += '<div class="analysis-grid">';
+
+  // Category breakdown
+  h += '<div class="panel"><div class="panel-title">Category Breakdown</div>';
+  Object.entries(s.categories).sort((a, b) => b[1] - a[1]).forEach(([t, c]) => {
+    const pct = ((c / s.count) * 100).toFixed(0);
+    h += '<div class="bar-row"><div class="bar-label">' + t + '</div>';
+    h += '<div class="bar-track"><div class="bar-fill dark" style="width:' + pct + '%"></div></div>';
+    h += '<div class="bar-val">' + c + ' (' + pct + '%)</div></div>';
+  });
+  h += '</div>';
+
+  // Price distribution
+  h += '<div class="panel"><div class="panel-title">Price Architecture</div>';
+  Object.entries(s.priceBuckets).forEach(([b, c]) => {
+    const pct = s.count > 0 ? ((c / s.count) * 100).toFixed(0) : 0;
+    h += '<div class="bar-row"><div class="bar-label">' + b + '</div>';
+    h += '<div class="bar-track"><div class="bar-fill green" style="width:' + pct + '%"></div></div>';
+    h += '<div class="bar-val">' + c + ' (' + pct + '%)</div></div>';
+  });
+  h += '</div>';
+
+  h += '</div>'; // end analysis-grid
+
+  // Category avg prices
+  h += '<div class="panel" style="margin-bottom:16px"><div class="panel-title">Average Price by Category</div>';
+  Object.entries(s.categoryPrices).sort((a, b) => b[1].avg - a[1].avg).forEach(([t, d]) => {
+    h += '<div class="bar-row"><div class="bar-label">' + t + '</div>';
+    h += '<div class="bar-track"><div class="bar-fill blue" style="width:' + (d.avg / s.maxPrice * 100) + '%"></div></div>';
+    h += '<div class="bar-val">' + fmt(d.avg) + '</div></div>';
+  });
+  h += '</div>';
+
+  // Size availability
+  if (Object.keys(s.sizes).length > 0) {
+    h += '<div class="panel" style="margin-bottom:16px"><div class="panel-title">Size Availability</div>';
+    h += '<div class="size-grid">';
+    ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL'].filter(sz => s.sizes[sz]).forEach(sz => {
+      const d = s.sizes[sz];
+      const rate = d.total > 0 ? (d.oos / d.total * 100) : 0;
+      h += '<div class="size-box ' + (rate > 50 ? 'bad' : rate > 20 ? 'warn' : 'ok') + '">';
+      h += '<div class="sz">' + sz + '</div>';
+      h += '<div class="oos-label">' + d.oos + '/' + d.total + ' OOS</div></div>';
+    });
+    h += '</div></div>';
+  }
+
+  h += '</div>';
+  return h;
+}
+
+// =====================================================
+// PRINT/PATTERN ANALYSIS
+// =====================================================
+function renderPrintAnalysis() {
+  const s = state.stats;
+  let h = '<div class="analysis">';
+  h += '<h2>Print & Pattern Analysis</h2>';
+  h += '<p style="color:#888;margin-bottom:20px;font-size:13px">Which prints and patterns are represented in the current range. Click a print to see its products.</p>';
+
+  const sorted = Object.entries(s.prints).sort((a, b) => b[1].count - a[1].count);
+
+  // Print distribution chart
+  h += '<div class="panel" style="margin-bottom:16px"><div class="panel-title">Print Distribution (' + state.colTitle + ')</div>';
+  sorted.forEach(([name, data]) => {
+    const pct = ((data.count / s.count) * 100).toFixed(0);
+    h += '<div class="bar-row"><div class="bar-label">' + name + '</div>';
+    h += '<div class="bar-track"><div class="bar-fill dark" style="width:' + pct + '%"></div></div>';
+    h += '<div class="bar-val">' + data.count + ' | ' + fmt(data.avgPrice) + '</div></div>';
+  });
+  h += '</div>';
+
+  // Print detail cards
+  h += '<div class="analysis-grid">';
+  sorted.forEach(([name, data]) => {
+    h += '<div class="insight-card"><h3>' + name + ' (' + data.count + ' styles, avg ' + fmt(data.avgPrice) + ')</h3>';
+    data.products.slice(0, 8).forEach(p => {
+      const avail = p.availableForSale;
+      h += '<div class="insight-row"><span>' + p.title + '</span>';
+      h += '<span style="color:' + (avail ? 'var(--green)' : 'var(--red)') + '">' + fmt(p.priceRange.minVariantPrice.amount) + ' ' + (avail ? 'In Stock' : 'OOS') + '</span></div>';
+    });
+    if (data.products.length > 8) h += '<div style="font-size:11px;color:#888;padding-top:4px">+' + (data.products.length - 8) + ' more</div>';
+    h += '</div>';
+  });
+  h += '</div></div>';
+  return h;
+}
+
+// =====================================================
+// SILHOUETTE ANALYSIS
+// =====================================================
+function renderSilhouetteAnalysis() {
+  const s = state.stats;
+  let h = '<div class="analysis">';
+  h += '<h2>Silhouette Analysis</h2>';
+  h += '<p style="color:#888;margin-bottom:20px;font-size:13px">Breakdown of dress silhouettes (Mini vs Midi vs Maxi) and other product silhouettes in the current collection.</p>';
+
+  // Dress silhouette split
+  const totalDresses = Object.values(s.silhouettes).reduce((a, b) => a + b, 0);
+  if (totalDresses > 0) {
+    h += '<div class="panel" style="margin-bottom:16px"><div class="panel-title">Dress Silhouette Split (' + totalDresses + ' dresses)</div>';
+    Object.entries(s.silhouettes).filter(([, c]) => c > 0).sort((a, b) => b[1] - a[1]).forEach(([name, count]) => {
+      const pct = ((count / totalDresses) * 100).toFixed(0);
+      const avgP = s.silhouetteProducts[name].reduce((a, p) => a + parseFloat(p.priceRange.minVariantPrice.amount), 0) / count;
+      h += '<div class="bar-row"><div class="bar-label">' + name + '</div>';
+      h += '<div class="bar-track"><div class="bar-fill dark" style="width:' + pct + '%"></div></div>';
+      h += '<div class="bar-val">' + count + ' (' + pct + '%) ' + fmt(avgP) + '</div></div>';
+    });
+    h += '</div>';
+
+    // Silhouette detail
+    h += '<div class="analysis-grid">';
+    Object.entries(s.silhouetteProducts).filter(([, prods]) => prods.length > 0).forEach(([name, prods]) => {
+      const avgP = prods.reduce((a, p) => a + parseFloat(p.priceRange.minVariantPrice.amount), 0) / prods.length;
+      const inStock = prods.filter(p => p.availableForSale).length;
+      h += '<div class="insight-card"><h3>' + name + ' (' + prods.length + ' styles)</h3>';
+      h += '<div style="font-size:12px;color:#888;margin-bottom:8px">Avg RRP: ' + fmt(avgP) + ' | In Stock: ' + inStock + '/' + prods.length + '</div>';
+      prods.forEach(p => {
+        h += '<div class="insight-row"><span>' + p.title + '</span>';
+        h += '<span>' + fmt(p.priceRange.minVariantPrice.amount) + '</span></div>';
+      });
+      h += '</div>';
+    });
+    h += '</div>';
+  }
+
+  // Non-dress categories silhouette overview
+  h += '<div class="panel" style="margin-top:16px"><div class="panel-title">Full Category Silhouette Overview</div>';
+  Object.entries(s.categories).sort((a, b) => b[1] - a[1]).forEach(([cat, count]) => {
+    const cp = s.categoryPrices[cat];
+    h += '<div class="bar-row"><div class="bar-label">' + cat + '</div>';
+    h += '<div class="bar-track"><div class="bar-fill blue" style="width:' + (count / s.count * 100) + '%"></div></div>';
+    h += '<div class="bar-val">' + count + ' | ' + (cp ? fmt(cp.avg) : '-') + '</div></div>';
+  });
+  h += '</div>';
+
+  h += '</div>';
+  return h;
+}
+
+// =====================================================
+// BOOT
+// =====================================================
+loadCollection(0);
+</script>
+</body>
+</html>

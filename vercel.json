@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "src/server.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "src/server.js" },
+    { "src": "/(.*)", "dest": "public/$1" }
+  ],
+  "env": {
+    "SHOPIFY_DOMAIN": "steele-dev.myshopify.com",
+    "STOREFRONT_TOKEN": "69a579fe61d5eee679ffc364b7642e31"
+  }
+}
