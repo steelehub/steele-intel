@@ -2,7 +2,7 @@ const fetch = require('node-fetch');
 const SHOPIFY_DOMAIN = process.env.SHOPIFY_DOMAIN || 'steele-dev.myshopify.com';
 const STOREFRONT_TOKEN = process.env.STOREFRONT_TOKEN || '';
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
-const API_VERSION = '2024-01';
+const API_VERSION = '2025-01';
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
