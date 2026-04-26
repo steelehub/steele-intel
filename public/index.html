@@ -125,8 +125,11 @@ body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); col
 // STEELE PRODUCT INTELLIGENCE PLATFORM
 // =====================================================
 
+const SEASONS = ['All Seasons', 'Resort24', 'Autumn25', 'Winter25', 'Spring25', 'Summer25', 'Essentials', 'Resort26', 'Autumn26', 'Winter26'];
+
 const COLLECTIONS = [
   { label: 'All Products', handle: 'shop-all' },
+  { label: 'All (incl. Inactive)', handle: '__admin__' },
   { label: 'Dresses', handle: 'dresses' },
   { label: 'Mini Dresses', handle: 'mini-dresses' },
   { label: 'Midi Dresses', handle: 'midi-dresses' },
@@ -142,8 +145,9 @@ const COLLECTIONS = [
 ];
 
 let state = {
-  products: [], activeCat: 0, selected: null, imgIdx: 0,
-  stats: null, colTitle: '', view: 'grid', loading: true, error: null,
+  products: [], allProducts: [], activeCat: 0, activeSeason: 0,
+  selected: null, imgIdx: 0, stats: null, colTitle: '', 
+  view: 'grid', loading: true, error: null,
 };
 
 const fmt = (a) => 'A$' + Math.round(parseFloat(a));
@@ -152,23 +156,132 @@ const fmt = (a) => 'A$' + Math.round(parseFloat(a));
 // DATA FETCHING
 // =====================================================
 async function loadCollection(idx) {
+  if (COLLECTIONS[idx].handle === '__admin__') return loadAdminProducts();
   state.loading = true; state.error = null; state.selected = null; state.activeCat = idx;
+  state.products = []; state.allProducts = [];
   render();
   try {
     const handle = COLLECTIONS[idx].handle;
-    const res = await fetch(`/api/collection/${handle}`);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (data.errors) throw new Error(data.errors[0].message);
-    const col = data.data?.collection;
-    if (!col) throw new Error('Collection "' + handle + '" not found');
-    state.colTitle = col.title;
-    state.products = (col.products?.edges || []).map(e => e.node);
+    let allProducts = [];
+    let cursor = null;
+    let hasMore = true;
+    let title = '';
+
+    while (hasMore) {
+      const url = cursor
+        ? `/api/collection/${handle}?cursor=${encodeURIComponent(cursor)}`
+        : `/api/collection/${handle}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (data.errors) throw new Error(data.errors[0].message);
+      const col = data.data?.collection;
+      if (!col) throw new Error('Collection "' + handle + '" not found');
+      title = col.title;
+      const edges = col.products?.edges || [];
+      allProducts = allProducts.concat(edges.map(e => e.node));
+      const pageInfo = col.products?.pageInfo;
+      hasMore = pageInfo?.hasNextPage || false;
+      cursor = pageInfo?.endCursor || null;
+
+      // Update UI progressively
+      state.colTitle = title;
+      state.allProducts = allProducts;
+      state.products = filterBySeason(allProducts);
+      computeStats();
+      render();
+    }
+
+    state.colTitle = title;
+    state.allProducts = allProducts;
+    state.products = filterBySeason(allProducts);
     computeStats();
   } catch (e) {
     state.error = e.message;
   }
   state.loading = false;
+  render();
+}
+
+// Load ALL products via Admin API (includes inactive/archived)
+async function loadAdminProducts() {
+  state.loading = true; state.error = null; state.selected = null; state.activeCat = 1;
+  state.products = []; state.allProducts = [];
+  render();
+  try {
+    let allProducts = [];
+    let pageInfo = '';
+    let hasMore = true;
+    while (hasMore) {
+      const url = pageInfo
+        ? '/api/admin/products?limit=250&page_info=' + pageInfo
+        : '/api/admin/products?limit=250&status=any';
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      const prods = (data.products || []).map(p => {
+        const v0 = p.variants?.[0] || {};
+        return {
+          id: 'gid://shopify/Product/' + p.id,
+          title: p.title, handle: p.handle,
+          productType: p.product_type || 'Other',
+          tags: Array.isArray(p.tags) ? p.tags : (typeof p.tags === 'string' ? p.tags.split(', ') : []),
+          availableForSale: p.status === 'active',
+          totalInventory: (p.variants || []).reduce((s, v) => s + (v.inventory_quantity || 0), 0),
+          status: p.status,
+          priceRange: {
+            minVariantPrice: { amount: String(v0.price || 0), currencyCode: 'AUD' },
+            maxVariantPrice: { amount: String(v0.price || 0), currencyCode: 'AUD' }
+          },
+          compareAtPriceRange: {
+            minVariantPrice: { amount: String(v0.compare_at_price || 0), currencyCode: 'AUD' },
+            maxVariantPrice: { amount: String(v0.compare_at_price || 0), currencyCode: 'AUD' }
+          },
+          images: { edges: (p.images || []).map(img => ({ node: { url: img.src, altText: img.alt } })) },
+          variants: { edges: (p.variants || []).map(v => ({ node: {
+            title: v.title, availableForSale: v.inventory_quantity > 0,
+            quantityAvailable: v.inventory_quantity,
+            price: { amount: String(v.price || 0), currencyCode: 'AUD' },
+            selectedOptions: [{ name: 'Size', value: v.option1 || v.title }]
+          }}))},
+          createdAt: p.created_at, updatedAt: p.updated_at,
+        };
+      });
+      allProducts = allProducts.concat(prods);
+      pageInfo = data._nextPageInfo || '';
+      hasMore = !!pageInfo;
+      state.colTitle = 'All Products (incl. Inactive)';
+      state.allProducts = allProducts;
+      state.products = filterBySeason(allProducts);
+      computeStats();
+      render();
+    }
+    state.allProducts = allProducts;
+    state.products = filterBySeason(allProducts);
+    computeStats();
+  } catch (e) {
+    state.error = e.message;
+  }
+  state.loading = false;
+  render();
+}
+
+function filterBySeason(products) {
+  if (state.activeSeason === 0) return products;
+  const season = SEASONS[state.activeSeason];
+  return products.filter(p => (p.tags || []).some(t => t === season));
+}
+
+function setSeason(idx) {
+  state.activeSeason = idx;
+  state.selected = null;
+  if (state.allProducts.length > 0) {
+    state.products = filterBySeason(state.allProducts);
+  } else {
+    state.products = filterBySeason(state.products);
+  }
+  computeStats();
   render();
 }
 
@@ -310,6 +423,15 @@ function render() {
   });
   h += '</div>';
 
+  // Season filter
+  h += '<div style="background:#e8e4de;padding:6px 24px;display:flex;gap:6px;overflow-x:auto;align-items:center">';
+  h += '<span style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#888;margin-right:8px;white-space:nowrap">SEASON:</span>';
+  SEASONS.forEach((season, i) => {
+    const isActive = s.activeSeason === i;
+    h += '<button style="padding:4px 10px;font-size:10px;letter-spacing:1px;border:1px solid ' + (isActive ? 'var(--accent)' : '#ccc') + ';background:' + (isActive ? 'var(--accent)' : 'white') + ';color:' + (isActive ? 'white' : '#666') + ';cursor:pointer;white-space:nowrap;border-radius:2px;font-family:inherit" onclick="setSeason(' + i + ')">' + season + '</button>';
+  });
+  h += '</div>';
+
   // Stats bar
   if (s.stats && !s.selected) {
     h += '<div class="stats-bar">';
@@ -355,8 +477,13 @@ function renderGrid() {
     const stockCount = p.variants.edges.filter(v => v.node.availableForSale).length;
 
     h += '<div class="card" onclick="state.selected=state.products[' + i + '];state.imgIdx=0;render()">';
-    if (!p.availableForSale) h += '<div class="badge-oos">Sold Out</div>';
+    if (p.status === 'draft') h += '<div style="position:absolute;top:8px;left:8px;background:#666;color:white;font-size:8px;padding:3px 8px;letter-spacing:1px;text-transform:uppercase;z-index:2">Draft</div>';
+    else if (p.status === 'archived') h += '<div style="position:absolute;top:8px;left:8px;background:#555;color:white;font-size:8px;padding:3px 8px;letter-spacing:1px;text-transform:uppercase;z-index:2">Archived</div>';
+    else if (!p.availableForSale) h += '<div class="badge-oos">Sold Out</div>';
     if (sale) h += '<div class="badge-sale">Sale</div>';
+    // Show season tag
+    const seasonTag = (p.tags || []).find(t => SEASONS.includes(t));
+    if (seasonTag) h += '<div style="position:absolute;bottom:' + (p.productType ? '52' : '36') + 'px;right:8px;background:rgba(26,26,46,0.85);color:white;font-size:8px;padding:2px 6px;letter-spacing:1px;z-index:2">' + seasonTag + '</div>';
     if (img) h += '<img src="' + img.url + '" alt="' + p.title + '" loading="lazy">';
     else h += '<div class="no-img">No image</div>';
     h += '<div class="info">';
