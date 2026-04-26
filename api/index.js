@@ -11,12 +11,12 @@ module.exports = async (req, res) => {
   try {
     if (url.startsWith('/api/collection/')) {
       const handle = url.replace('/api/collection/', '').split('?')[0];
-      const query = JSON.stringify({query: '{ collection(handle: "' + handle + '") { title products(first: 50) { edges { node { id title handle productType tags availableForSale totalInventory priceRange { minVariantPrice { amount currencyCode } maxVariantPrice { amount currencyCode } } compareAtPriceRange { minVariantPrice { amount currencyCode } maxVariantPrice { amount currencyCode } } images(first: 8) { edges { node { url altText } } } variants(first: 30) { edges { node { title sku availableForSale quantityAvailable price { amount currencyCode } selectedOptions { name value } } } } } } } } }'});
+      const query = JSON.stringify({query: '{ collection(handle: "' + handle + '") { title products(first: 250) { edges { node { id title handle productType tags availableForSale totalInventory priceRange { minVariantPrice { amount currencyCode } maxVariantPrice { amount currencyCode } } compareAtPriceRange { minVariantPrice { amount currencyCode } maxVariantPrice { amount currencyCode } } images(first: 8) { edges { node { url altText } } } variants(first: 30) { edges { node { title sku availableForSale quantityAvailable price { amount currencyCode } selectedOptions { name value } } } } } } } } }'});
       const r = await fetch('https://' + SHOPIFY_DOMAIN + '/api/' + API_VERSION + '/graphql.json', {method: 'POST', headers: {'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': STOREFRONT_TOKEN}, body: query});
       return res.json(await r.json());
     }
     if (url.startsWith('/api/collections')) {
-      const query = JSON.stringify({query: '{ collections(first: 50) { edges { node { id title handle } } } }'});
+      const query = JSON.stringify({query: '{ collections(first: 250) { edges { node { id title handle } } } }'});
       const r = await fetch('https://' + SHOPIFY_DOMAIN + '/api/' + API_VERSION + '/graphql.json', {method: 'POST', headers: {'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': STOREFRONT_TOKEN}, body: query});
       return res.json(await r.json());
     }
