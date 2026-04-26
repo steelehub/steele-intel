@@ -1,6 +1,7 @@
 const fetch = require('node-fetch');
 const SHOPIFY_DOMAIN = process.env.SHOPIFY_DOMAIN || 'steele-dev.myshopify.com';
-const STOREFRONT_TOKEN = process.env.STOREFRONT_TOKEN || '69a579fe61d5eee679ffc364b7642e31';
+const STOREFRONT_TOKEN = process.env.STOREFRONT_TOKEN || '';
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
 const API_VERSION = '2024-01';
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -9,6 +10,23 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   const url = req.url;
   try {
+    if (url.startsWith('/api/admin/products')) {
+      if (!ADMIN_TOKEN) return res.status(401).json({error: 'Admin API token not configured. Set ADMIN_TOKEN in Vercel env vars.'});
+      const params = new URLSearchParams(url.split('?')[1] || '');
+      const limit = params.get('limit') || 250;
+      const pageInfo = params.get('page_info') || '';
+      const status = params.get('status') || 'any';
+      let adminUrl = 'https://' + SHOPIFY_DOMAIN + '/admin/api/' + API_VERSION + '/products.json?limit=' + limit + '&status=' + status;
+      if (pageInfo) adminUrl = 'https://' + SHOPIFY_DOMAIN + '/admin/api/' + API_VERSION + '/products.json?limit=' + limit + '&page_info=' + pageInfo;
+      const r = await fetch(adminUrl, {headers: {'X-Shopify-Access-Token': ADMIN_TOKEN, 'Content-Type': 'application/json'}});
+      const linkHeader = r.headers.get('link') || '';
+      const data = await r.json();
+      let nextPageInfo = '';
+      const nextMatch = linkHeader.match(/page_info=([^>&]*)[^>]*>;\s*rel="next"/);
+      if (nextMatch) nextPageInfo = nextMatch[1];
+      data._nextPageInfo = nextPageInfo;
+      return res.json(data);
+    }
     if (url.startsWith('/api/collection/')) {
       const parts = url.replace('/api/collection/', '').split('?');
       const handle = parts[0];
