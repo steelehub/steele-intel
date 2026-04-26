@@ -216,7 +216,7 @@ async function loadAdminProducts() {
     while (hasMore) {
       const url = pageInfo
         ? '/api/admin/products?limit=250&page_info=' + pageInfo
-        : '/api/admin/products?limit=250&status=any';
+        : '/api/admin/products?limit=250&';
       const res = await fetch(url);
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
