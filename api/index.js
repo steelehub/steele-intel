@@ -15,8 +15,8 @@ module.exports = async (req, res) => {
       const params = new URLSearchParams(url.split('?')[1] || '');
       const limit = params.get('limit') || 250;
       const pageInfo = params.get('page_info') || '';
-      const status = params.get('status') || 'any';
-      let adminUrl = 'https://' + SHOPIFY_DOMAIN + '/admin/api/' + API_VERSION + '/products.json?limit=' + limit + '&status=' + status;
+      
+      let adminUrl = 'https://' + SHOPIFY_DOMAIN + '/admin/api/' + API_VERSION + '/products.json?limit=' + limit + ';
       if (pageInfo) adminUrl = 'https://' + SHOPIFY_DOMAIN + '/admin/api/' + API_VERSION + '/products.json?limit=' + limit + '&page_info=' + pageInfo;
       const r = await fetch(adminUrl, {headers: {'X-Shopify-Access-Token': ADMIN_TOKEN, 'Content-Type': 'application/json'}});
       const linkHeader = r.headers.get('link') || '';
